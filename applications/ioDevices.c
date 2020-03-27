@@ -1,86 +1,99 @@
 /*
- * @Description: 蜂鸣器
- * @Author: chenxi
- * @Date: 2020-02-02 16:58:32
- * @LastEditTime : 2020-02-10 17:05:07
- * @LastEditors  : chenxi
+ * @Description: io设备线程
  */
 
 #define LOG_TAG "ioDevices"
 
+#include "ioDevices.h"
+
 #include <elog.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 
-#include "ioDevices.h"
 
 #include <wiringPi.h>
 
-Buzzer_Type Beep; //蜂鸣器控制器
 
-// 按键按下产生的任务
-void key_down(void)
+
+
+// 错误状态灯，只亮红灯
+void errorStatus_led(void)
 {
-    // oled.pagenum++;
-    printf("key_down\n");
+    LED_ON (LEDR_PIN);
+    LED_OFF(LEDG_PIN);
+    LED_OFF(LEDB_PIN);
 }
 
-void Buzzer_Init(void)
+void all_led_off(void)
 {
-    log_v("[%s %s] [%s: %s: %d]", __DATE__, __TIME__, __FILE__, __func__, __LINE__);
-    pinMode(Buzzer_PIN, OUTPUT);
-    digitalWrite(Buzzer_PIN, LOW);
+    LED_OFF(LEDR_PIN);
+    LED_OFF(LEDG_PIN);
+    LED_OFF(LEDB_PIN);
 }
 
-// buzzer为蜂鸣器控制器  count为响的次数  length响的时间长度(ms)
-void Buzzer_Set(Buzzer_Type *buzzer, uint8 count, uint32 time)
-{
-    log_d("Buzzer_Set count:%d time:%d", count, time);
-    buzzer->count = count; // 响的时间长度
-    buzzer->time = time;   // 保存时间间隔长度
-}
 
-// 蜂鸣器鸣响任务【可指示系统各个状态】
-void Buzzer_Process(Buzzer_Type buzzer)
+void *leds_thread(void *arg)
 {
-    log_i("Buzzer_Process begin");
-    for (int i = buzzer.count; i > 1; i--)
+    while(1)
     {
-        Buzzer_ON();
-        delay(buzzer.time);
-        Buzzer_OFF();
-        delay(buzzer.time);
+        LED_ON(LEDB_PIN);
+        sleep(1);
+        LED_OFF(LEDB_PIN);
+        sleep(1);
+
     }
-    // 最后一次响
-    Buzzer_ON();
-    delay(buzzer.time);
-    Buzzer_OFF();
-    log_i("Buzzer_Process end");
 }
 
-
-void LED_Init(void)
+void *button_thread(void *arg)
 {
-    log_i("[%s %s] [%s: %s: %d]", __DATE__, __TIME__, __FILE__, __func__, __LINE__);
-    pinMode(LED_Red, OUTPUT);
-    digitalWrite(LED_Red, HIGH);
-    pinMode(LED_Green, OUTPUT);
-    digitalWrite(LED_Green, HIGH);
-    pinMode(LED_Blue, OUTPUT);
-    digitalWrite(LED_Blue, HIGH);
+    static uint8_t button_up = 1; // 按键按松开标志，1表示松开
+    while(1)
+    {
+        if(button_up && (LOW == digitalRead(BUTTON_PIN)))
+        {
+            delay(10); // 去抖动 
+            button_up = 0;
+            if(LOW == digitalRead(BUTTON_PIN))
+            {
+                printf("button down\n");
+            }
+        }
+        else if(HIGH == digitalRead(BUTTON_PIN)) // 如果松开
+        {
+            button_up = 1; 	
+        }
+    }
 }
 
-void ErrorStatus_LED(void)
+
+
+/**
+  * @brief  io设备线程
+  */
+int ioDevices_thread_init(void)
 {
-    LED_ON(LED_Red);
-    LED_OFF(LED_Green);
-    LED_OFF(LED_Blue);
+    pthread_t leds_tid;
+    pthread_t buttons_tid;
+
+    pinMode(BUZZER_PIN, OUTPUT);
+    pinMode(LEDR_PIN,   OUTPUT);
+    pinMode(LEDG_PIN,   OUTPUT);
+    pinMode(LEDB_PIN,   OUTPUT);
+
+    pinMode(BUTTON_PIN,  INPUT);
+    pullUpDnControl(BUTTON_PIN, PUD_UP);
+
+    all_led_off();
+    digitalWrite(BUZZER_PIN, LOW);
+
+    pthread_create(&leds_tid, NULL, leds_thread, NULL);
+    pthread_detach(leds_tid);
+
+    // wringNP暂不支持 按键中断，因此只能循环检测
+    pthread_create(&buttons_tid, NULL, button_thread, NULL);
+    pthread_detach(buttons_tid);
+
+    return 0;
 }
 
-void ALL_LED_OFF(void)
-{
-    log_i("ALL_LED_OFF");
-    digitalWrite(LED_Red, HIGH);
-    digitalWrite(LED_Green, HIGH);
-    digitalWrite(LED_Blue, HIGH);
-}
