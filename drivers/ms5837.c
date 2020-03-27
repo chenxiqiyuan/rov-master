@@ -1,269 +1,269 @@
+
 /*
- * drv_MS5837.c
+ * @Description: ms5837 深度传感器驱动
  *
- *  Created on: 2019年3月30日
- *      Author: zengwangfa
  *       Notes: 水深传感器设备驱动
  *   Attention: SCL - E10 (黑色)   
  *				SDA - E12 (黄色)   
  */
+#define LOG_TAG "ms5837"
 
-
-#include <elog.h>
 #include "ms5837.h"
 
+#include <elog.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 #include <errno.h>
 
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 
-
- 
-/*
-C1 压力灵敏度 SENS|T1
-C2  压力补偿  OFF|T1
-C3	温度压力灵敏度系数 TCS
-C4	温度系数的压力补偿 TCO
-C5	参考温度 T|REF
-C6 	温度系数的温度 TEMPSENS
-*/
-
-
-double OFF_;
-float Aux;
-/*
-dT 实际和参考温度之间的差异
-MS_TEMP 实际温度	
-*/
-
-int32 Cal_C[7];	        //用于存放PROM中的6组数据1-6
-int64 dT;
-float MS_TEMP,MS5837_Temperature;
-int64 D1_Pres,D2_Temp;	// 数字压力值,数字温度值
-
-
-/*
-OFF 实际温度补偿
-SENS 实际温度灵敏度
-*/
-uint64 SENS;
-uint32 MS5837_Pressure;				//大气压
-uint32 TEMP2,T2,OFF2,SENS2;	//温度校验值
-
-
+static ms5837_t ms5837_dev;
+static ms5837_t *ms5837 = &ms5837_dev;
 
 /**
-  * @brief  MS583703BA 复位
-  * @param  None
-  * @retval None
+  * @brief  crc4校验函数 (datasheet P12)
+  * @param  数组
+  * @retval 返回crc 4bit校验
   */
-void MS583703BA_RESET(void)
+uint8_t _crc4(uint16_t *n_prom)
 {
-	IIC_Start();
-	IIC_Send_Byte(MS583703BA_SlaveAddress);//CSB接地，主机地址：0XEE，否则 0X77
-	IIC_Wait_Ack();
-    IIC_Send_Byte(MS583703BA_RST);//发送复位命令
-	IIC_Wait_Ack();
-    IIC_Stop();
-	
-}
-/**
-  * @brief  MS5837_CRC4校验(4bit校验)
-  * @param  MS5837 PROM标定参数数组
-  * @retval 返回CRC校验码
-  */
-uint8 MS5837_CRC4(int32 *n_prom) // n_prom defined as 8x unsigned int (n_prom[8])
-{
-	int32  cnt; // simple counter
-	uint32 n_rem=0; // crc remainder
-	uint8  n_bit;
-	n_prom[0]=((n_prom[0]) & 0x0FFF); // CRC byte is replaced by 0
-	n_prom[7]=0; // Subsidiary value, set to 0
+	int32_t  cnt;
+	uint32_t n_rem = 0; // crc 余数
+	uint8_t  n_bit;
+
+	n_prom[0] = ((n_prom[0]) & 0x0FFF); // CRC byte is replaced by 0
+	n_prom[7] = 0; // Subsidiary value, set to 0
 	for (cnt = 0; cnt < 16; cnt++) // operation is performed on bytes
-	{ 	// choose LSB or MSB
-		if (cnt%2==1) n_rem ^= (unsigned short) ((n_prom[cnt>>1]) & 0x00FF);
-		else n_rem ^= (unsigned short) (n_prom[cnt>>1]>>8);
+	{ 	
+		// choose LSB or MSB
+		if (cnt%2==1) 
+			n_rem ^= (unsigned short) ((n_prom[cnt>>1]) & 0x00FF);
+		else 
+			n_rem ^= (unsigned short) (n_prom[cnt>>1]>>8);
 		for (n_bit = 8; n_bit > 0; n_bit--)
 		{
-			if (n_rem & (0x8000)) n_rem = (n_rem << 1) ^ 0x3000;
-			else n_rem = (n_rem << 1);
+			if (n_rem & (0x8000)) 
+				n_rem = (n_rem << 1) ^ 0x3000;
+			else 
+				n_rem = (n_rem << 1);
 		}
 	}
-	n_rem= ((n_rem >> 12) & 0x000F); // final 4-bit remainder is CRC code
+	n_rem= ((n_rem >> 12) & 0x000f); // final 4-bit remainder is CRC code
 	return (n_rem ^ 0x00);
 }
+
 /**
-  * @brief  MS5837_Get_PROM
-  * @param  None
-  * @retval 返回MS5837_Get_PROM(出厂标定参数)是否成功标志：1成功，0失败
+  * @brief  ms5837 复位
   */
-uint8 MS5837_Get_PROM(void)
-{	 
-	uint8  inth,intl,i;
-	uint8  CRC_Check = 0;
-	for (i=0;i<=6;i++) 
+void ms5837_reset(int fd)
+{
+	wiringPiI2CWrite(fd, MS583703BA_RESET);
+}
+
+/**
+  * @brief  ms5837获取出厂标定参数
+  * @param  None
+  * @retval 返回出厂标定参数 crc校验 是否成功标志：1成功，-1失败
+  */
+int ms5837_get_calib_param(int fd)
+{	
+	static int i;
+	for (i = 0; i <= 6; i++) 
 	{
-			IIC_Start();
-			IIC_Send_Byte(MS583703BA_SlaveAddress);
-			IIC_Wait_Ack();
-			IIC_Send_Byte(0xA0 + (i*2));
-			IIC_Wait_Ack();
-			IIC_Stop();
-
-			rt_thread_mdelay(5);
-			IIC_Start();
-			IIC_Send_Byte(MS583703BA_SlaveAddress+0x01);  //进入接收模式
-
-			rt_thread_mdelay(1);
-			IIC_Wait_Ack();
-			inth = IIC_Read_Byte(1);  		//带ACK的读数据 ，带ACK就表示还需要读取
-			
-			rt_thread_mdelay(1);
-			intl = IIC_Read_Byte(0); 			//最后一个字节NACK
-			IIC_Stop();
-			Cal_C[i] = (((uint16_t)inth << 8) | intl);
+		// 读取prom中的出厂标定参数
+    	ms5837->c[i] = \
+		wiringPiI2CReadReg16(fd, MS583703BA_PROM_RD + (i * 2));
 	}
-	CRC_Check = (uint8)((Cal_C[0]&0xF000)>>12);
-	if(CRC_Check == MS5837_CRC4(Cal_C)){
-				return 1;
+	/* crc校验为 C[0]的 bit[15,12] */
+	ms5837->crc = (uint8_t)(ms5837->c[0] >> 12);
+	// 工厂定义参数为 c[0] 的bit[14,0]
+	ms5837->factory_id = (uint8_t)(ms5837->c[0] & 0x0fff);
+
+	/* 
+	 * crc校验为用于判断ms5837是否初始化成功 
+	 * 或者说是否是 ms5837传感器
+	*/
+	if(ms5837->crc == _crc4(ms5837->c))
+	{
+		return 1;
 	}
-	else {return 0;}
-	
-}
-/**
-  * @brief  MS5837_Init
-  * @param  None
-  * @retval 初始化是否成功标志：1成功，0失败
-  */
-uint8 MS5837_Init(void){
-		
-		IIC_Init();	
-		rt_thread_mdelay(100);
-		MS583703BA_RESET();	     
-		rt_thread_mdelay(100);  
-	
-		if(1 == MS5837_Get_PROM()){
-				return 1;
-		}
-		else {
-				return 0;
-		}
-		
+	return -1;
 }
 
 
-/**
-  * @brief  MS583703BA转换结果
-  * @param  命令值(温度、气压)
-  * @retval 返回MS5837初始化是否成功标志：1成功，0失败
-  */
-uint64 MS583703BA_getConversion(uint8_t command)
+ /**
+ * @brief  ms5837 获取转换数据
+ * @param 
+ *  uint8_t command  带精度温度命令  带精度温度压力(见头文件)
+ * @retval
+ *  uint32_t 数据结果
+ */
+uint32_t ms5837_get_conversion(int fd, uint8_t command)
 {
- 
-			uint64 conversion = 0;
-			uint8 temp[3];
+ 	uint8_t temp[3];
+	uint32_t conversion;
+	// 1.先写入转换命令(即指定转换传感器及精度) (datasheet P11)
+	wiringPiI2CWrite(fd, command);
+
+ 	// 2.延时等待转换完成  读取8196转换值得关键，必须大于 datasheet P2页中的18.08毫秒
+	delay(30);
 	
-	    IIC_Start();
-			IIC_Send_Byte(MS583703BA_SlaveAddress); 		//写地址
-			IIC_Wait_Ack();
-			IIC_Send_Byte(command); //写转换命令
-			IIC_Wait_Ack();
-			IIC_Stop();
+	// 3.在写入 ADC read命令
+	wiringPiI2CWrite(fd, MS583703BA_ADC_RD);
 
-	    rt_thread_mdelay(20);  //读取8196转换值得关键，必须大于PDF-2页中的18.08毫秒
-			IIC_Start();
-			IIC_Send_Byte(MS583703BA_SlaveAddress); 		//写地址
-			IIC_Wait_Ack();
-			IIC_Send_Byte(0);				// start read sequence
-			IIC_Wait_Ack();
-			IIC_Stop();
-		 
-			IIC_Start();
-			IIC_Send_Byte(MS583703BA_SlaveAddress+0x01);  //进入接收模式
-			IIC_Wait_Ack();
-			temp[0] = IIC_Read_Byte(1);  //带ACK的读数据  bit 23-16
-			temp[1] = IIC_Read_Byte(1);  //带ACK的读数据  bit 8-15
-			temp[2] = IIC_Read_Byte(0);  //带NACK的读数据 bit 0-7
-			IIC_Stop();
-			
-			conversion = (uint64)temp[0] <<16 | (uint64)temp[1] <<8 | (uint64)temp[2];
-			return conversion;
- 
-}
+	// 4.读取 24bit的转换数据 高位在前
+	temp[0] = wiringPiI2CRead(fd); // bit 23-16
+	temp[1] = wiringPiI2CRead(fd); // bit 8-15
+	temp[2] = wiringPiI2CRead(fd); // bit 0-7
 
+	conversion = ((uint32_t)temp[0] <<16) | ((uint32_t)temp[1] <<8) | ((uint32_t)temp[2]);
 
-/**
-  * @brief  MS583703BA转换温度结果
-  * @param  None
-  * @retval None
-  */
-void MS583703BA_getTemperature(void)
-{
-	
-	D2_Temp = MS583703BA_getConversion(MS583703BA_D2_OSR_2048);
-
-	dT=D2_Temp - (((uint32_t)Cal_C[5])*256);
-	MS_TEMP=2000+dT*((uint32_t)Cal_C[6])/8388608;  //问题在于此处没有出现负号
+	return conversion;
 }
 
 /**
-  * @brief  MS583703BA转换气压结果
-  * @param  None
-  * @retval None
-  */
-void MS583703BA_getPressure(void)
+ * @brief  获取并计算温度值
+ *  此时的温度值还没经过补偿，并不准确
+ */
+void ms5837_cal_raw_temperature(int fd)
 {
-		D1_Pres= MS583703BA_getConversion(MS583703BA_D1_OSR_8192);
+	// 获取原始温度数字量
+	ms5837->D2_Temp = ms5837_get_conversion(fd, MS583703BA_D2_OSR_2048);
+	// 实际温度与参考温度之差 (公式见datasheet P7)
+	ms5837->dT = ms5837->D2_Temp - (((uint32_t)ms5837->c[5]) * 256);
+	// 实际的温度
+	ms5837->TEMP = 2000 + ms5837->dT * ((uint32_t)ms5837->c[6]) / 8388608; // 8388608 = 2^23,这里不采用右移23位，因为该数据为有符号 
+}
 
-		
-		OFF_=(uint32_t)Cal_C[2]*65536+((uint32_t)Cal_C[4]*dT)/128;
-		SENS=(uint32_t)Cal_C[1]*32768+((uint32_t)Cal_C[3]*dT)/256;
+/**
+ * @brief  获取并计算压力值
+ *  并进行温度补偿
+ */
+void ms5837_cal_pressure(int fd)
+{
+	uint64_t OFFi, SENSi;
+	uint32_t Ti, dT_squ;
+	uint32_t temp_minus_squ, temp_plus_squ;
 
-		if(MS_TEMP<2000)  // 低于20℃时
+	// 获取原始压力数字量
+	ms5837->D1_Pres= ms5837_get_conversion(fd, MS583703BA_D1_OSR_8192);
+	// 实际温度偏移
+	ms5837->OFF  = (int64_t)ms5837->c[2] * 65536 + ((int64_t)ms5837->c[4] * ms5837->dT) / 128;
+	// 实际温度灵敏度
+	ms5837->SENS = (int64_t)ms5837->c[1] * 32768 + ((int64_t)ms5837->c[3] * ms5837->dT) / 256;
+
+	dT_squ   = (ms5837->dT * ms5837->dT); // dT的2次方
+	temp_minus_squ = (2000 - ms5837->TEMP) * (2000 - ms5837->TEMP); // 温度差的2次方
+
+	/* 二级温度补偿 (datasheet P8) */
+	if(ms5837->TEMP < 2000) // 低温情况:低于20℃时
+	{
+		Ti    = 3 * dT_squ / 0x200000000;
+		OFFi  = 3 * temp_minus_squ / 2;
+		SENSi = 5 * temp_minus_squ / 8;
+
+		if(ms5837->TEMP < -1500) // 超低温情况:低于-15℃时
 		{
-				Aux = (2000-MS_TEMP)*(2000-MS_TEMP);
-				T2 = 3*(dT*dT) /0x80000000; 
-				OFF2 = (uint32)1.5*Aux;
-				SENS2 = 5*Aux/8;
-				
-				OFF_ = OFF_ - OFF2;
-				SENS = SENS - SENS2;	
+			temp_plus_squ = (ms5837->TEMP + 1500) * (ms5837->TEMP + 1500); // 温度和的2次方
+			OFFi  = OFFi  + 7 * temp_plus_squ;
+			SENSi = SENSi + 4 * temp_plus_squ / 8;
 		}
-		else{
-				T2=2*(dT*dT)/137438953472;
-				OFF2 = 1*Aux/16;
-				SENS2 = 0;
-				OFF_ = OFF_ - OFF2;
-				SENS = SENS - SENS2;			 
-		}
-		MS5837_Pressure= ((D1_Pres*SENS/2097152-OFF_)/4096)/10;
-		MS5837_Temperature=(MS_TEMP-T2)/100;
+	}
+	else // 高温情况:高于20℃时
+	{
+		Ti    = 2 * dT_squ / 0x2000000000;
+		OFFi  = 1 * temp_minus_squ / 16;
+		SENSi = 0; 
+	}
+	ms5837->OFF  -= OFFi;
+	ms5837->SENS -= SENSi;	
+	// 温度补偿后的压力值
+	ms5837->P = (ms5837->SENS / 0x200000 - ms5837->OFF) / 0x1000;
+
+	// 实际温度值
+	ms5837->temperature = (ms5837->TEMP - Ti) / 100;
+	// 实际压力值
+	ms5837->pressure = ms5837->P / 10;
 }
 
-uint32 res_value[10] = {0};
 
-uint32 get_ms5837_pressure(void)
-{		
-		uint32 ms5837_value = 0;
-	
-		for(char i = 0;i < 10;i++){  //先行获取 10次数据以防数据出错
-				MS583703BA_getTemperature();//获取外部温度
-				MS583703BA_getPressure();   //获取水压
-				rt_thread_mdelay(5); //50ms
-				
-				res_value[i] = MS5837_Pressure; 
-		}
-		ms5837_value = Bubble_Filter(res_value);
-		//rt_kprintf("ms5837_init_value: %d",ms5837_init_value);
-		return ms5837_value;
-}
+//------------------------------------------------------------------------------------------------------------------
+//
+//	用于 WiringPi functions
+//
+//------------------------------------------------------------------------------------------------------------------
 
-float get_ms5837_temperature(void)
+
+/**
+  * @brief  ms5837 根据引脚转换为通道获取相应数值
+  */
+static int myDigitalRead(struct wiringPiNodeStruct *node, int pin)
 {
-		return MS5837_Temperature;
+    /* 0为压力通道，1为温度通道 */
+    int channel = pin - node->pinBase;
+    int fd      = node->fd;
+
+    /* 先获取温度数据，因为需要进行温度补偿 
+	 * 在计算压力函数中，会计算温度二阶，使得温度更加准确
+	 * 因此不管获取压力或者温度，都应调用这以下两个函数
+	*/
+    ms5837_cal_raw_temperature(fd);
+	ms5837_cal_pressure(fd);
+
+    if(PRESSURE_SENSOR == channel)
+    {
+        return ms5837->pressure;
+    }
+    else if(TEMPERATURE_SENSOR == channel)
+    {
+        return ms5837->temperature;
+    }
+
+    log_e("ms5837 channel range in [0, 1]");
+    return -1;
 }
 
+
+
+/**
+ * @brief  初始化并设置 ms5837
+ * @param 
+ *  int pinBase  pinBase > 64
+ */
+int ms5837Setup(const int pinBase)
+{
+    static int fd;
+	struct wiringPiNodeStruct *node;
+
+    if ((fd = wiringPiI2CSetupInterface(MS5837_I2C_DEV, MS583703BA_I2C_ADDR)) < 0)
+    {
+        log_e("ms5837 i2c init failed");
+        return -1;
+    }
+
+	// 延时待测试 rt_thread_mdelay(100);  
+	/* 先复位再读取prom数据 (datasheet P10)*/
+	ms5837_reset(fd);	     
+	
+	// 获取标定参数
+	if(ms5837_get_calib_param(fd) < 0) 
+	{
+		return -1;
+	}
+
+    // 创建节点，2个通道，一个为压力值，一个为温度值
+    node = wiringPiNewNode(pinBase, 2);
+	if (!node)
+    {
+        log_e("ms5837 node create failed");
+        return -1;
+    }
+
+    // 注册方法
+    node->fd         = fd;
+    node->analogRead = myDigitalRead;
+
+	return fd;
+}
 
