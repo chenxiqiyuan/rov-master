@@ -4,8 +4,12 @@
 
 #define LOG_TAG "pca9685"
 
-#include <elog.h>
 #include "pca9685.h"
+
+#include <elog.h>
+#include <stdio.h>
+#include <math.h>
+#include <errno.h>
 
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
@@ -173,7 +177,7 @@ int pca9685Setup(const int pinBase, float freq)
   	fd = wiringPiI2CSetupInterface(PCA9685_I2C_DEV, PCA9685_I2C_ADDR);
   	if (fd < 0)
   	{
-    	log_e("pca9685 init failed");
+    	log_e("pca9685 i2c init failed");
     	return fd;
   	}
 
@@ -187,7 +191,11 @@ int pca9685Setup(const int pinBase, float freq)
 	// 创建节点 16 pins [0..15] + [16] for all
 	node = wiringPiNewNode(pinBase, PIN_ALL + 1);
 	if (!node)
+	{
+     	log_e("pca9685 node create failed");
 		return -1;
+	}
+
 
   	// 注册方法
 	node->fd			= fd;

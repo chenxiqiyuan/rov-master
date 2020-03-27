@@ -4,9 +4,9 @@
  
 #define LOG_TAG "jy901"
 
-#include <elog.h>
 #include "jy901.h"
 
+#include <elog.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -118,6 +118,7 @@ void jy901_convert(JY901_Type *pArr)
 
 	pArr->Temperature = (float)jy901->stcAcc.T / 100;
 }
+
 
 /**
   * @brief  打开对应 JY901 串口设备
