@@ -5,6 +5,6 @@
 
 int system_init(void);
 
-
+void oled_show(void);
 #endif
 

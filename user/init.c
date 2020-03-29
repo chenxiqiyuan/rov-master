@@ -2,7 +2,7 @@
  * @Description: 初始化程序
  */
 #define LOG_TAG "init"
-
+#include "../drivers/cpu_status.h"
 #include "../drivers/pca9685.h"
 #include "../drivers/jy901.h"
 #include "../drivers/oled.h"
@@ -36,12 +36,32 @@ void easylogger_init(void)
 
 void oled_show(void)
 {
-	char localip[20];
+	char *localip;
+	char str[50];
+	memory_t mem;
+  	disk_t disk;
+	float cpu_usage;
+	char net_speed[20];	
     // 获取eth0的 ip地址
-    get_localip("eth0",localip);
+    localip = get_localip("eth0");
+	sprintf(str,"IP  %s", localip);
+	OLED_ShowString(0, 0, (uint8_t *)str, 12);
 
-	OLED_ShowString(0, 0, (uint8_t *)"IP", 12);
-	OLED_ShowString(30, 0, (uint8_t *)localip, 12);
+	// 获取内存使用情况
+	get_memory_status(&mem);
+	sprintf(str,"MEM: %0.1f%% of %d Mb", mem.usage_rate, mem.total / 1024);
+	OLED_ShowString(0,  12, (uint8_t *)str, 12);
+
+	cpu_usage = get_cpu_usage();
+	sprintf(str,"CPU: %0.1f%%", cpu_usage);
+	OLED_ShowString(0,  24, (uint8_t *)str, 12);
+
+	get_disk_status(&disk);	
+	sprintf(str,"DISK: %0.1f%% of %0.1f G", disk.usage_rate, (float)disk.total / 1024);
+	OLED_ShowString(0,  36, (uint8_t *)str, 12);
+
+	//printf("%s", get_net_speed("eth0"));
+	OLED_ShowString(0,  48, (uint8_t *)get_net_speed("eth0"), 12);
 }
 
 
@@ -54,14 +74,16 @@ int system_init(void)
 		return -1;
 	}
 
-	sensor_thread_init(); // 初始化传感器线程
+	// sensor_thread_init(); // 初始化传感器线程
+
 	server_thread_init(); // 初始化服务器线程
+
 	ioDevs_thread_init(); // 初始化io设备线程
 
 	oledSetup();
 
 
-	oled_show();
+
 
 	return 0;
 }
