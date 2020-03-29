@@ -1,16 +1,12 @@
 /*
- * @Description: 获取 CPU 状况
- * @Author: chenxi
- * @Date: 2020-02-09 11:45:20
- * @LastEditTime : 2020-02-10 17:10:08
- * @LastEditors  : chenxi
+ * @Description: 获取 CPU、内存、硬盘 状况
  */
 
 #define LOG_TAG "cpu_status"
 
-#include <elog.h>
 #include "cpu_status.h"
 
+#include <elog.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,15 +23,16 @@
 #define TEMP_PATH "/sys/class/thermal/thermal_zone0/temp"
 #define MAX_SIZE 32
 
-/**
- * 获取 CPU 温度函数
- *
- * @return CPU温度值
+
+
+ /**
+ * @brief  获取 cpu温度值
+ * @return float cpu温度值
  */
 float get_cpu_temp(void)
 {
     int fd;
-    double temp = 0;
+    float temp = 0;
     char buf[MAX_SIZE];
     // 打开/sys/class/thermal/thermal_zone0/temp
     fd = open(TEMP_PATH, O_RDONLY);
@@ -58,26 +55,38 @@ float get_cpu_temp(void)
     return temp;
 }
 
-// 获取 CPU 内存情况
-void get_memoccupy(MEM_OCCUPY *mem)
+ /**
+ * @brief  获取 内存情况
+ * @return 内存使用状况 结构体指针
+ */
+memory_t *get_memory_status(void)
 {
-    FILE *fd;
-    char buff[256];
-    MEM_OCCUPY *m;
-    m = mem;
+    static FILE *fd;
+    static char buff[50];
+    static char name1[20]; // 用于保存 内存名称(eg. total/available)
+    static char name2[20]; // 用于保存 单位    (eg. kB)
+
+    static memory_t memory_dev;
+    static memory_t *memory = &memory_dev;
 
     fd = fopen("/proc/meminfo", "r");
 
-    fgets(buff, sizeof(buff), fd);
-    fgets(buff, sizeof(buff), fd);
-    fgets(buff, sizeof(buff), fd);
-    fgets(buff, sizeof(buff), fd);
-    sscanf(buff, "%s %lu %s", m->name, &m->total, m->name2);
+    fgets(buff, sizeof(buff), fd); // 读取第1行 total
+    sscanf(buff, "%s %u %s", name1, &memory->total, name2);
+    // printf("%s %u %s\n", name1, memory->total, name2); // 用于调试打印
 
-    fgets(buff, sizeof(buff), fd); //从fd文件中读取长度为buff的字符串再存到起始地址为buff这个空间里
-    sscanf(buff, "%s %lu %s", m->name, &m->free, m->name2);
+    fgets(buff, sizeof(buff), fd); // 跳过第2行 free
 
-    fclose(fd); //关闭文件fd
+    fgets(buff, sizeof(buff), fd); // 读取第3行 available
+    sscanf(buff, "%s %u %s", name1, &memory->available, name2);
+    //printf("%s %u %s\n", name1, memory->available, name2);
+
+    memory->usage_rate = (float)(memory->total - memory->available) / memory->total * 100.0f;
+    // printf("mem usage_rate %f%% \n", memory->usage_rate);
+
+    fclose(fd); // 关闭文件
+
+    return memory;
 }
 
 // 获取 cpu 使用情况
@@ -115,8 +124,8 @@ float get_cpu_usage(void)
     od = (unsigned long)(cpu_stat1.user + cpu_stat1.nice + cpu_stat1.system + cpu_stat1.idle); //第一次(用户+优先级+系统+空闲)的时间再赋给od
     nd = (unsigned long)(cpu_stat2.user + cpu_stat2.nice + cpu_stat2.system + cpu_stat2.idle); //第二次(用户+优先级+系统+空闲)的时间再赋给od
 
-    id = (unsigned long)(cpu_stat2.user - cpu_stat1.user);     //用户第一次和第二次的时间之差再赋给id
-    sd = (unsigned long)(cpu_stat2.system - cpu_stat1.system); //系统第一次和第二次的时间之差再赋给sd
+    id = (unsigned long)(cpu_stat2.user - cpu_stat1.user);     // 用户第一次和第二次的时间之差再赋给id
+    sd = (unsigned long)(cpu_stat2.system - cpu_stat1.system); // 系统第一次和第二次的时间之差再赋给sd
     if ((nd - od) != 0)
         cpu_use = (float)((sd + id) * 100) / (nd - od); //((用户+系统)乖100)除(第一次和第二次的时间差)再赋给g_cpu_used
     else
