@@ -1,5 +1,5 @@
 /*
- * @Description: 数据链路服务器,用于传输与接收数据
+ * @Description: 数据链路服务器，用于传输与接收数据
  */
 
 #define LOG_TAG "server"
@@ -27,36 +27,31 @@ static int sever_sock  = -1;
 static int client_sock = -1;
 
 /* 包头位固定为：0xAA,0x55;  数据长度位：0x16 */
-uint8 return_data[RETURN_DATA_LEN] = {0xAA, 0x55, 0x16};
+static uint8_t return_data[RETURN_DATA_LEN] = {0xAA, 0x55, 0x16};
 
 /**
   * @brief  获取对应网卡的IP地址
-  * @param  eth_name:网卡名 , local_ip_addr:用于保存IP
-  * @retval 
-  * @notice 
+  * @param  eth_name:网卡名   ip:数组首地址
   */
-int get_localip(const char *eth_name, char *local_ip_addr)
+void get_localip(const char *eth_name, char *ip)
 {
-	int ret = -1;
     struct ifreq ifr;
-    
-	if (local_ip_addr == NULL || eth_name == NULL)
+
+	if (eth_name == NULL)
 	{
-		return ret;
+		return;
 	}
 
     strcpy(ifr.ifr_name, eth_name);
     if (!(ioctl(sever_sock, SIOCGIFADDR, &ifr)))
     {
-        ret = 0;
-        strcpy(local_ip_addr, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+        strcpy(ip, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
     }
-    return ret;
 }
 
 
 
-void print_hex_data(const char *name, uint8 *data, int len)
+void print_hex_data(const char *name, uint8_t *data, int len)
 {
     printf("%s:", name);
     for(int i = 0; i < len; i++)
@@ -83,7 +78,7 @@ void *send_thread(void *arg)
         {
             if (client_sock != -1)
             {
-                log_i("IP: [%s] client closed", arg);
+                log_i("IP [%s] client closed", arg);
                 close(client_sock);
                 client_sock = -1;
             }
@@ -109,7 +104,7 @@ void *recv_thread(void *arg)
         {
             if (client_sock != -1)
             {
-                log_i("IP: [%s] client closed", arg);
+                log_i("IP [%s] client closed", arg);
                 close(client_sock);
                 client_sock = -1;
             }
@@ -125,7 +120,6 @@ void *recv_thread(void *arg)
 /**
   * @brief  数据服务器线程
   * @param  void *arg
-  * @retval NULL
   * @notice 该线程创建两个线程用于接收与发送数据
   */
 void *server_thread(void *arg)
@@ -134,7 +128,7 @@ void *server_thread(void *arg)
     static struct sockaddr_in clientAddr; // 用于保存客户端的地址信息
     static unsigned int addrLen;
 	static unsigned int clientCnt; // 记录客户端连接的次数
-    static int opt = 1; // 套接字选项 Enable address reuse
+    static int opt = 1;    // 套接字选项 Enable address reuse
     static char *clientip; // 保存客户端 IP 地址
     static char serverip[20]; // 保存本地 eth0 IP地址
 
@@ -176,7 +170,7 @@ void *server_thread(void *arg)
     log_i("waiting for clients to connect ...");
 
     // 获取eth0的 ip地址
-    get_localip("eth0",serverip);
+    get_localip("eth0", serverip);
     log_i("ip   [%s]",serverip);
     log_i("port [%d]", LISTEN_PORT);
 
@@ -205,9 +199,6 @@ void *server_thread(void *arg)
 
 /**
   * @brief  数据服务器线程初始化
-  * @param  NULL
-  * @retval 
-  * @notice 
   */
 int server_thread_init(void)
 {

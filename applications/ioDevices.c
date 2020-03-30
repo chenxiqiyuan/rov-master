@@ -1,5 +1,5 @@
 /*
- * @Description: io设备线程
+ * @Description: io设备线程(RGB、KEY、BUZZER)
  */
 
 #define LOG_TAG "ioDevices"
@@ -13,7 +13,7 @@
 
 #include <wiringPi.h>
 
-// 定义模拟pwm设备描述符，并指定pin
+// 定义模拟pwm设备描述符，并指定pin、name
 static softPWM_t ledr = {
     .pin = LEDR_PIN,
     .name = "ledr",
@@ -108,7 +108,7 @@ void softPwm_process(softPWM_t *pwm)
 /**
  * @brief  模拟pwm设备线程
  *
- *  休眠时间与周期有关
+ *  注意：休眠时间与周期有关，若休眠时间更改，sotfPwmSet中的静态变量div需要对应修改
  */
 void *softPWM_thread(void *arg)
 {

@@ -11,18 +11,18 @@
 #include "data.h"
 // #include "Control.h"
 
-uint8 focus_data_ok = 0;
+uint8_t focus_data_ok = 0;
 
-uint8 addFocus_Data[6] = {0xAA, 0x55, 0x02, 0x01, 0x00, 0x02}; //放大
-uint8 minFocus_Data[6] = {0xAA, 0x55, 0x02, 0x02, 0x00, 0x03}; //缩小
+uint8_t addFocus_Data[6] = {0xAA, 0x55, 0x02, 0x01, 0x00, 0x02}; //放大
+uint8_t minFocus_Data[6] = {0xAA, 0x55, 0x02, 0x02, 0x00, 0x03}; //缩小
 
-uint8 addZoom_Data[6] = {0xAA, 0x55, 0x02, 0x00, 0x01, 0x02}; //聚焦
-uint8 minZoom_Data[6] = {0xAA, 0x55, 0x02, 0x00, 0x02, 0x03}; //放焦
+uint8_t addZoom_Data[6] = {0xAA, 0x55, 0x02, 0x00, 0x01, 0x02}; //聚焦
+uint8_t minZoom_Data[6] = {0xAA, 0x55, 0x02, 0x00, 0x02, 0x03}; //放焦
 
-uint8 Camera_Clear_Data[6] = {0xAA, 0x55, 0x02, 0x88, 0x88, 0x11}; //恢复初始值
-uint8 Camera_Stop_Data[6] = {0xAA, 0x55, 0x02, 0x00, 0x00, 0x01};  //停止
+uint8_t Camera_Clear_Data[6] = {0xAA, 0x55, 0x02, 0x88, 0x88, 0x11}; //恢复初始值
+uint8_t Camera_Stop_Data[6] = {0xAA, 0x55, 0x02, 0x00, 0x00, 0x01};  //停止
 /*----------------------- Function Implement --------------------------------*/
-uint8 focus_data[10] = {0};
+uint8_t focus_data[10] = {0};
 
 /**
   * @brief  Focus_Zoom_Camera(摄像头变焦、放大)
@@ -30,7 +30,7 @@ uint8 focus_data[10] = {0};
   * @retval None
   * @notice 
   */
-void Focus_Zoom_Camera_Control(uint8 *action)
+void Focus_Zoom_Camera_Control(uint8_t *action)
 {
 	/*
 	switch (*action)
@@ -59,16 +59,16 @@ void Focus_Zoom_Camera_Control(uint8 *action)
 
 /**
   * @brief  Camera_Focus_Data_Analysis(变焦摄像头返回数据解析)
-  * @param  控制字符数据 uint8 Data
+  * @param  控制字符数据 uint8_t Data
   * @retval None
   * @notice 从第四个字节开始为控制字符
   */
-void Camera_Focus_Data_Analysis(uint8 Data) //控制数据解析
+void Camera_Focus_Data_Analysis(uint8_t Data) //控制数据解析
 {
 	/*
-	static uint8 RxCheck = 0; //尾校验字
-	static uint8 RxCount = 0; //接收计数
-	static uint8 i = 0;		  //
+	static uint8_t RxCheck = 0; //尾校验字
+	static uint8_t RxCount = 0; //接收计数
+	static uint8_t i = 0;		  //
 
 	focus_data[RxCount++] = Data; //将收到的数据存入缓冲区中
 

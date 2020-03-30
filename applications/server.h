@@ -17,5 +17,6 @@
 
 
 int server_thread_init(void);
+void get_localip(const char *eth_name, char *ip);
 
 #endif

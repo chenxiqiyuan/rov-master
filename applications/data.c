@@ -1,10 +1,27 @@
+/*
+ * @Description: ROV状态数据回传与控制命令接收解析，获取 系统状态(CPU、内存、硬盘、网卡网速)
+ */
 
+#define LOG_TAG "data"
 
-#define LOG_TAG "rc_data"
+#include "../drivers/oled.h"
+#include "../drivers/cpu_status.h"
 
-#include <elog.h>
 #include "data.h"
 #include "sensor.h"
+#include "server.h"
+
+#include <elog.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+
+
+
+
+system_status_t  system_dev;
+system_status_t  *system = &system_dev;
+
 
 ReceiveData_Type ReceiveData = {
     .THR = 1500,
@@ -20,12 +37,12 @@ ControlCmd_Type ControlCmd = {
 
 Rocker_Type Rocker; // 摇杆数据结构体
 
-uint8 RC_Control_Data[RECV_DATA_LEN] = {0};
-uint8 Frame_EndFlag = 0; //接收数据包结束标志 
-uint8 Control_RxCheck = 0; //尾校验字
-uint8 recv_buff[RECV_DATA_LEN] = {0};
+uint8_t RC_Control_Data[RECV_DATA_LEN] = {0};
+uint8_t Frame_EndFlag = 0; //接收数据包结束标志 
+uint8_t Control_RxCheck = 0; //尾校验字
+uint8_t recv_buff[RECV_DATA_LEN] = {0};
 
-uint8 device_hint_flag = 0x0; //设备提示字符
+uint8_t device_hint_flag = 0x0; //设备提示字符
 
 
 /**
@@ -34,20 +51,19 @@ uint8 device_hint_flag = 0x0; //设备提示字符
   * @retval 头两位小数的100倍
   * @notice 
   */
-uint8 get_decimal(float data)
+uint8_t get_decimal(float data)
 {
-    return (uint8)((float)(data - (int)data) * 100);
+    return (uint8_t)((float)(data - (int)data) * 100);
 }
 
 /**
   * @brief  计算校验和
-  * @param  数据包*buff、数据包长度len
-  * @retval SUM
-  * @notice 
+  * @param  数据包 *buff、数据包长度len
+  * @retval 累加和 SUM
   */
-uint8 calculate_check_sum(uint8 *buff, uint8 len)
+uint8_t calculate_check_sum(uint8_t *buff, uint8_t len)
 {
-    uint8 sum = 0;
+    uint8_t sum = 0;
     for (int i = 0; i < len; i++)
     {
         sum += buff[i];
@@ -62,7 +78,7 @@ uint8 calculate_check_sum(uint8 *buff, uint8 len)
   * @retval None
   * @notice 从第四个字节开始为控制字符
   */
-void remote_control_data_analysis(uint8 *recv_buff) //控制数据解析
+void remote_control_data_analysis(uint8_t *recv_buff) //控制数据解析
 {
     if (recv_buff[0] == 0xAA && recv_buff[1] == 0x55 && recv_buff[2] == 0x10) //检测包头
     {
@@ -113,7 +129,7 @@ void Control_Cmd_Clear(ControlCmd_Type *cmd)
   * @retval SUM
   * @notice 
   */
-void convert_rov_status_data(uint8 *buff) // 转换需要返回上位机数据
+void convert_rov_status_data(uint8_t *buff) // 转换需要返回上位机数据
 {
     short troll; //暂存数据
     short tpitch;
@@ -138,15 +154,15 @@ void convert_rov_status_data(uint8 *buff) // 转换需要返回上位机数据
     buff[11] = (int)(Sensor.DepthSensor.Depth);       //低8位
 
     buff[12] = tyaw >> 8;    // Yaw 高8位
-    buff[13] = (uint8)tyaw; //低8位
+    buff[13] = (uint8_t)tyaw; //低8位
 
     buff[14] = tpitch >> 8;   // Pitch 高8位
-    buff[15] = (uint8)tpitch; //低8位
+    buff[15] = (uint8_t)tpitch; //低8位
 
     buff[16] = troll >> 8;   // Roll 高8位
-    buff[17] = (uint8)troll; //低8位
+    buff[17] = (uint8_t)troll; //低8位
 
-    buff[18] = (uint8)speed_test++;        //x轴航速
+    buff[18] = (uint8_t)speed_test++;        //x轴航速
     buff[19] = device_hint_flag; //设备提示字符
 
     buff[20] = 0x01; // ControlCmd.All_Lock;
@@ -158,4 +174,107 @@ void convert_rov_status_data(uint8 *buff) // 转换需要返回上位机数据
     buff[24] = 0x0; // 保留
 
     buff[25] = calculate_check_sum(buff, RETURN_DATA_LEN - 1);//获取校验和
+}
+
+
+
+
+void oled_show_status(void)
+{
+    char str[20];
+	sprintf(str,"IP  %s", system->net.ip);
+	OLED_ShowString(0, 0, (uint8_t *)str, 12);
+
+	sprintf(str,"Mem: %0.1f%% of %d Mb", system->memory.usage_rate, system->memory.total / 1024);
+	OLED_ShowString(0,  16, (uint8_t *)str, 12);
+
+	sprintf(str,"Disk: %0.1f%% of %0.1f G", system->disk.usage_rate, (float)system->disk.total / 1024);
+	OLED_ShowString(0,  32, (uint8_t *)str, 12);
+
+	sprintf(str,"CPU: %0.1f%%", system->cpu.usage_rate);
+	OLED_ShowString(0,  48, (uint8_t *)str, 12);
+
+    if(system->net.netspeed < 1024)
+    {
+        sprintf(str,"%0.1f kb/s", system->net.netspeed);
+        OLED_ShowString(70,  48, (uint8_t *)str, 12);
+    }
+    else // 转换单位为Mb
+    {
+        sprintf(str,"%0.1f Mb/s", system->net.netspeed / 1024);
+        OLED_ShowString(70,  48, (uint8_t *)str, 12);
+    }
+
+}
+
+
+/**
+ * @brief  获取CPU状态 线程
+ *  get_cpu_usage函数内已经休眠1s，因此不再设置休眠  
+ */
+void *cpu_status_thread(void *arg)
+{
+    while(1)
+    {
+        system->cpu.temperature = get_cpu_temp();
+        system->cpu.usage_rate  = get_cpu_usage();
+        oled_show_status();
+    }
+}
+
+/**
+ * @brief  获取网速 线程
+ *  get_net_speed函数内已经休眠1s，因此不再设置休眠  
+ */
+void *net_speed_thread(void *arg)
+{
+    system->net.name = "eth0"; // 指定 eht0 网卡
+    // 获取ip地址
+    get_localip(system->net.name, system->net.ip);
+    while(1)
+    {
+        system->net.netspeed = get_net_speed(system->net.name);
+    }  
+}
+
+/**
+ * @brief  获取内存、硬盘状态 线程
+ */
+void *mem_disk_status_thread(void *arg)
+{
+    while(1)
+    {
+        // 获取内存使用情况
+        get_memory_status(&system->memory);
+        // 获取硬盘使用情况
+        get_disk_status(&system->disk);   
+        // 1s更新一次
+        sleep(1); 
+    }
+}
+
+/**
+  * @brief  系统状态获取 线程初始化
+  *  CPU、网卡网速 状态都是通过休眠一段时间，两次数据对比进行测算的，因此都需要各开一个线程
+  *  内存、硬盘 状态共用1个即可
+  */
+
+  
+int system_status_thread_init(void)
+{
+    pthread_t cpu_tid;
+    pthread_t net_tid;  
+    pthread_t mem_disk_tid;
+
+    pthread_create(&cpu_tid, NULL, cpu_status_thread, NULL);
+    pthread_detach(cpu_tid);
+
+    pthread_create(&net_tid, NULL, net_speed_thread, NULL);
+    pthread_detach(net_tid);    
+
+    // 内存、硬盘 状态获取共用1个线程
+    pthread_create(&mem_disk_tid, NULL, mem_disk_status_thread, NULL);
+    pthread_detach(mem_disk_tid);
+
+    return 0;
 }

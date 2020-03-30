@@ -14,9 +14,9 @@
 
 typedef struct
 {
-	uint8 Err_Limit_Flag : 1;			 //偏差限幅标志   位定义
-	uint8 Integrate_Limit_Flag : 1;		 //积分限幅标志
-	uint8 Integrate_Separation_Flag : 1; //积分分离标志
+	uint8_t Err_Limit_Flag : 1;			 //偏差限幅标志   位定义
+	uint8_t Integrate_Limit_Flag : 1;		 //积分限幅标志
+	uint8_t Integrate_Separation_Flag : 1; //积分分离标志
 	float Expect;						 //期望
 	float FeedBack;						 //反馈值
 	float Err;							 //偏差
@@ -83,7 +83,7 @@ typedef struct
 	float Last_Time;
 	float Now_Time;
 	float Time_Delta;
-	uint16 Time_Delta_INT; //单位ms
+	uint16_t Time_Delta_INT; //单位ms
 } Testime;
 
 extern AllControler Total_Controller;

@@ -13,10 +13,10 @@
 
 typedef struct //推进器中值、最大值、最小值
 {
-	int16 PowerMax;
-	int16 PowerMed;
-	int16 PowerMin;
-	int16 PowerDeadband; //死区值
+	int16_t PowerMax;
+	int16_t PowerMed;
+	int16_t PowerMin;
+	int16_t PowerDeadband; //死区值
 } PropellerParameter_Type; //推进器参数结构体
 
 typedef struct //推进器方向
@@ -31,20 +31,20 @@ typedef struct //推进器方向
 
 typedef struct //调试时各个推进器的偏差量
 {
-	int16 leftUp;
-	int16 rightUp;
-	int16 leftDown;
-	int16 rightDown;
-	int16 leftMiddle;
-	int16 rightMiddle;
+	int16_t leftUp;
+	int16_t rightUp;
+	int16_t leftDown;
+	int16_t rightDown;
+	int16_t leftMiddle;
+	int16_t rightMiddle;
 } PropellerError_Type; //推进器偏移值
 
 typedef struct
 {
-	int16 Adjust1;
-	int16 Adjust2;
-	int16 Adjust3;
-	int16 Adjust4;
+	int16_t Adjust1;
+	int16_t Adjust2;
+	int16_t Adjust3;
+	int16_t Adjust4;
 } Adjust_Parameter; //调节参数
 
 typedef struct
@@ -69,7 +69,7 @@ typedef enum
 void Propeller_Init(void);
 
 void PWM_Update(PropellerPower_Type *power); //推进器PWM 更新
-void Extractor_Control(uint8 *action);
+void Extractor_Control(uint8_t *action);
 
 extern PropellerDir_Type PropellerDir;
 extern PropellerParameter_Type PropellerParameter;
@@ -82,12 +82,12 @@ extern PropellerError_Type TurnLeft;
 extern PropellerError_Type TurnRight;
 extern Adjust_Parameter AdjustParameter;
 
-extern int16 PowerPercent;
+extern int16_t PowerPercent;
 extern PropellerPower_Type PropellerPower;
 
 
 
-void Search_Light_Control(uint8 *action);
+void Search_Light_Control(uint8_t *action);
 
 
 
@@ -98,11 +98,11 @@ typedef struct
     short MinValue;     //舵机 反向
     short MedValue;     //舵机 中值
     short CurrentValue; //舵机当前值
-    uint8 Speed;        //舵机速度值
+    uint8_t Speed;        //舵机速度值
 } ServoType;
 
-void RoboticArm_Control(uint8 *action);
-void YunTai_Control(uint8 *action);
+void RoboticArm_Control(uint8_t *action);
+void YunTai_Control(uint8_t *action);
 void DirectionProportion(int Mode);
 
 extern ServoType RoboticArm; //机械臂

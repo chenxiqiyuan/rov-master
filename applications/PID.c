@@ -49,9 +49,9 @@ const float Control_Unit[18][20] = {
   */
 void PID_Init(PID_Controler *Controler, Controler_Label Label)
 {
-	Controler->Err_Limit_Flag = (uint8)(Control_Unit[Label][0]);			//1偏差限幅标志
-	Controler->Integrate_Limit_Flag = (uint8)(Control_Unit[Label][1]);		//2积分限幅标志
-	Controler->Integrate_Separation_Flag = (uint8)(Control_Unit[Label][2]); //3积分分离标志
+	Controler->Err_Limit_Flag = (uint8_t)(Control_Unit[Label][0]);			//1偏差限幅标志
+	Controler->Integrate_Limit_Flag = (uint8_t)(Control_Unit[Label][1]);		//2积分限幅标志
+	Controler->Integrate_Separation_Flag = (uint8_t)(Control_Unit[Label][2]); //3积分分离标志
 	Controler->Expect = Control_Unit[Label][3];								//4期望
 	Controler->FeedBack = Control_Unit[Label][4];							//5反馈值
 	Controler->Err = Control_Unit[Label][5];								//6偏差
@@ -179,7 +179,7 @@ float PID_Control_Yaw(PID_Controler *Controler)
 
 float PID_Control_Div_LPF(PID_Controler *Controler)
 {
-	uint8 i = 0;
+	uint8_t i = 0;
 	float tempa, tempb, tempc, max, min; //用于防跳变滤波
 	/*******偏差计算*********************/
 	Controler->Last_Err = Controler->Err;					   //保存上次偏差

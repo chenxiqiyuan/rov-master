@@ -19,7 +19,7 @@
 
 #include <wiringPi.h>
 
-uint8 Propeller_Init_Flag = 0;
+uint8_t Propeller_Init_Flag = 0;
 
 PropellerParameter_Type PropellerParameter = {
 	//初始化推进器参数值【限幅】
@@ -42,7 +42,7 @@ PropellerError_Type TurnLeft = {0, 0, 0, 0, 0, 0};
 PropellerError_Type TurnRight = {0, 0, 0, 0, 0, 0};
 Adjust_Parameter AdjustParameter = {1, 1, 1, 1};
 
-int16 PowerPercent;
+int16_t PowerPercent;
 
 /*******************************************
 * 函 数 名：Propeller_Init
@@ -138,7 +138,7 @@ int Light_Output_Limit(short *value)
   * @retval None
   * @notice 
   */
-void Search_Light_Control(uint8 *action)
+void Search_Light_Control(uint8_t *action)
 {
     switch (*action)
     {
@@ -180,7 +180,7 @@ ServoType YunTai = {
     .Speed = 10 //云台转动速度
 };              //云台
 
-uint16 propeller_power = 1500;
+uint16_t propeller_power = 1500;
 short _test_value = 0;
 
 /*----------------------- Function Implement --------------------------------*/
@@ -204,9 +204,9 @@ void Servo_Output_Limit(ServoType *Servo)
   * @retval None
   * @notice 
   */
-void RoboticArm_Control(uint8 *action)
+void RoboticArm_Control(uint8_t *action)
 {
-    static uint8 on_off = 0; //自锁开关
+    static uint8_t on_off = 0; //自锁开关
     if (0 == on_off)
     {
         on_off = 1;
@@ -254,9 +254,9 @@ void RoboticArm_Control(uint8 *action)
   * @notice 
   */
 
-void YunTai_Control(uint8 *action)
+void YunTai_Control(uint8_t *action)
 {
-    static uint8 on_off = 0; //自锁开关
+    static uint8_t on_off = 0; //自锁开关
     if (0 == on_off)
     {
         on_off = 1;

@@ -3,7 +3,7 @@
 
 #include "../user/DataType.h"
 
-void Focus_Zoom_Camera_Control(uint8 *action);
-void Camera_Focus_Data_Analysis(uint8 Data); //控制数据解析
+void Focus_Zoom_Camera_Control(uint8_t *action);
+void Camera_Focus_Data_Analysis(uint8_t Data); //控制数据解析
 
 #endif

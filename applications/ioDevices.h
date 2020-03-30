@@ -27,13 +27,14 @@
 /* 模拟PWM设备描述符 */
 typedef struct
 {
-    uint32_t cnt;  // 计数器
-    uint32_t time; // 持续时间
+    char*    name;   // 设备名称
+    uint32_t cnt;    // 计数器
+    uint32_t time;   // 持续时间
     uint32_t period; // 周期
-    uint8_t  duty; // 占空比 (0~100)
-    uint8_t  pin;  // 引脚
-    uint8_t  flag; // 模式标志位
-    char*    name; // 设备名称
+    uint8_t  duty;   // 占空比 (0~100)
+    uint8_t  pin;    // 引脚
+    uint8_t  flag;   // 模式标志位
+
 
 }softPWM_t; 
 
