@@ -23,7 +23,7 @@ typedef struct
 	float b[3];
 } Butter_Parameter;
 
-uint32 Bubble_Filter(uint32 *value);
+uint32_t Bubble_Filter(uint32_t *value);
 float KalmanFilter(float *Original_Data);
 
 #endif

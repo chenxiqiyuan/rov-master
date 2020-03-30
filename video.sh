@@ -8,7 +8,7 @@
 CAMERA_ON=0
 
 ############# 摄像头视频推流参数 #############
-CAMERA1_DEV="/dev/video1"                  #
+CAMERA1_DEV="/dev/video0"                  #
 CAMERA1_FPS=30                             #
 CAMERA1_PORT=8088                          #
 CAMERA1_RESO=1280x720                      #

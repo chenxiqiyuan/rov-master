@@ -26,7 +26,7 @@ all:
 	@cp ./user/rovmaster .
 
 	# 打印提示信息
-	@echo "\033[35m[$(ctime)] make success > rovmaster,usage:\033[0m" 
+	@echo "\033[35m[$(ctime)] make success > rovmaster,run:\033[0m" 
 	@echo "\033[35msudo ./rovmaster\033[0m" 
 clean:
 	#make clean -C: 进入指定目录下执行make clean命令

@@ -10,11 +10,11 @@
 #include "filter.h"
 
 /* 冒泡 中值滤波  */
-uint32 Bubble_Filter(uint32 *value)
+uint32_t Bubble_Filter(uint32_t *value)
 {
-	uint8 i, j, swapFlag; //交换标志位
-	uint32 res = 0;		  //reserve 暂存
-	uint32 med = 0;		  //中值
+	uint8_t i, j, swapFlag; //交换标志位
+	uint32_t res = 0;		  //reserve 暂存
+	uint32_t med = 0;		  //中值
 
 	for (j = 0; j < 10 - 1; j++)
 	{
