@@ -26,8 +26,8 @@
 float Yaw_Control = 0.0f; //Yaw—— 偏航控制
 float Yaw = 0.0f;
 
-extern int16 PowerPercent;
-extern uint8 Frame_EndFlag;
+extern int16_t PowerPercent;
+extern uint8_t Frame_EndFlag;
 extern Sensor_Type Sensor; //传感器参数
 
 #define STEP_VLAUE 1
@@ -58,7 +58,7 @@ void Convert_RockerValue(Rocker_Type *rc) //获取摇杆值
 ********************************************/
 void Speed_Buffer(short *now_value, short *last_value, short range)
 {
-	static uint16 diff_value = 0;
+	static uint16_t diff_value = 0;
 	diff_value = abs((*last_value) - (*now_value)); //暂存差值的绝对值
 
 	if (diff_value >= range) //微分大于预设值，启动缓冲

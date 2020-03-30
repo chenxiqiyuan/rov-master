@@ -1,26 +1,23 @@
 /*
  * @Description: 各类数据结构定义文件
- * @Author: chenxi
- * @Date: 2020-02-08 21:46:49
- * @LastEditTime: 2020-03-17 22:12:53
- * @LastEditors: chenxi
  */
 
-#ifndef __DATA_TYPE_H
-#define __DATA_TYPE_H
+#ifndef __DATA_TYPE_H_
+#define __DATA_TYPE_H_
+#include <stdint.h>
+/*
+typedef char int8_t;
+typedef unsigned char uint8_t;
 
-#define int8 char
-#define uint8 unsigned char
+typedef short int16_t;
+typedef unsigned short uint16_t;
 
-#define int16 short
-#define uint16 unsigned short
+typedef int int32_t;
+typedef unsigned int uint32_t;
 
-#define int32 int
-#define uint32 unsigned int
-
-#define int64 long long
-#define uint64 unsigned long long
-
+typedef long long int64_t;
+typedef unsigned long long uint64_t;
+*/
 #define my_abs(x) (((x) > 0) ? (x) : -(x))
 
 /* ------------------------【数据结构体定义】---------------------------------*/
@@ -80,7 +77,7 @@ typedef struct
 
 typedef struct
 {
-	uint8 Type;
+	uint8_t Type;
 	float Depth;			 //深度
 	float Temperature;		 //水温
 	float PessureValue;		 //压力值
@@ -89,7 +86,7 @@ typedef struct
 
 typedef struct
 {
-	uint8 Percent;  //电量百分比
+	uint8_t Percent;  //电量百分比
 	float Current;  //电流
 	float Voltage;  //电压
 	float Capacity; //电池容量

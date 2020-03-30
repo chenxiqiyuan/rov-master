@@ -23,13 +23,13 @@ void Propeller_Stop(void);                    //推进器停转
 void robotForward(void);  //前进 未实现
 void robotBackAway(void); //后退 未实现
 
-void turnRight(uint16 power); //右转
-void turnLeft(uint16 power);  //左转
+void turnRight(uint16_t power); //右转
+void turnLeft(uint16_t power);  //左转
 
 void Propeller_Output(void); /* 推进器的真实输出 */
 
 extern float Expect_Depth;
-extern uint8 VehicleMode; //【FOUR_AXIS】 or 【SIX_AXIS】
-extern uint8 WorkMode;     //【WORK】 or 【DEBUG】
+extern uint8_t VehicleMode; //【FOUR_AXIS】 or 【SIX_AXIS】
+extern uint8_t WorkMode;     //【WORK】 or 【DEBUG】
 
 #endif

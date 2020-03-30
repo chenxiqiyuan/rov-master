@@ -22,10 +22,10 @@
 
 float Expect_Depth = 0.0f;
 
-uint8 VehicleMode = FOUR_AXIS; //【FOUR_AXIS】 or 【SIX_AXIS】
-uint8 WorkMode = WORK;			//【WORK】 or 【DEBUG】
+uint8_t VehicleMode = FOUR_AXIS; //【FOUR_AXIS】 or 【SIX_AXIS】
+uint8_t WorkMode = WORK;			//【WORK】 or 【DEBUG】
 
-extern int16 PowerPercent;
+extern int16_t PowerPercent;
 extern Sensor_Type Sensor; //传感器参数
 
 /*******************************************
@@ -129,7 +129,7 @@ void ROV_Rotate_Control(Rocker_Type *rc)
 * 注    意：最大值为Propeller.PowerMax 初始化为1800
             最小值为Propeller.PowerMin 初始化为1300
 ********************************************/
-uint16 Propeller_Output_Limit(int16 value)
+uint16_t Propeller_Output_Limit(int16_t value)
 {
 	//不超过+500   不超过-500
 	value = (value) > (PropellerParameter.PowerMax - PropellerParameter.PowerMed) ? (PropellerParameter.PowerMax - PropellerParameter.PowerMed) : value; //正向限幅
@@ -165,7 +165,7 @@ void Propeller_Output(void)
 * 返 回 值：none
 * 注    意：none
 ********************************************/
-void turnRight(uint16 power) //右旋
+void turnRight(uint16_t power) //右旋
 {
 	power = ((PowerPercent) * (power)) / 70;
 	PropellerPower.leftUp = PropellerDir.leftUp * (power) + PropellerError.leftUp;
@@ -174,7 +174,7 @@ void turnRight(uint16 power) //右旋
 	PropellerPower.rightDown = 0 + PropellerError.rightDown;
 }
 
-void turnLeft(uint16 power) //左旋
+void turnLeft(uint16_t power) //左旋
 {
 	power = ((PowerPercent) * (power)) / 70;
 	PropellerPower.leftUp = 0 + PropellerError.leftUp;

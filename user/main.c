@@ -19,7 +19,7 @@
 #include <wiringPi.h>
 
 
-
+/*
 static void signal_handler(int sig)
 {
 	// ctrl + c程序中断回调
@@ -28,9 +28,10 @@ static void signal_handler(int sig)
 	// TODO 退出后清除 mjpg-streamer
 
 	exit(0);
-}
+}*/
 
 // TODO 是否需要使用fork函数
+/*
 void *mjpg_streamer_thread(void *arg)
 {
 
@@ -39,7 +40,7 @@ void *mjpg_streamer_thread(void *arg)
 	system("./video.sh &"); // 打开视频推流脚本
 	return NULL;
 }
-
+*/
 int main(int argc, char **argv)
 {
 	pthread_t mjpg_tid;
@@ -47,18 +48,18 @@ int main(int argc, char **argv)
 	system_init();
 
 	/* register signal handler for <CTRL>+C in order to clean up */
-	if(signal(SIGINT, signal_handler) == SIG_ERR) 
+	/*if(signal(SIGINT, signal_handler) == SIG_ERR) 
 	{
 		printf("123\n");
-	}
+	}*/
 
-	pthread_create(&mjpg_tid, NULL, mjpg_streamer_thread, NULL);
-	pthread_detach(mjpg_tid);
+	//pthread_create(&mjpg_tid, NULL, mjpg_streamer_thread, NULL);
+	//pthread_detach(mjpg_tid);
 
 
 	while (1)
 	{
-		oled_show();
+		//oled_show();
 		sleep(1);
 		//delay(10);
 	}
