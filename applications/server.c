@@ -26,8 +26,12 @@
 static int sever_sock  = -1;
 static int client_sock = -1;
 
-/* 包头位固定为：0xAA,0x55;  数据长度位：0x16 */
+/* 接收数据包 */
+static uint8_t recv_buff[RECV_DATA_LEN] = {0};
+
+/* 返回数据包，包头位固定为：0xAA,0x55;  数据长度位：0x16 */
 static uint8_t return_data[RETURN_DATA_LEN] = {0xAA, 0x55, 0x16};
+
 
 /**
   * @brief  获取对应网卡的IP地址
@@ -171,8 +175,7 @@ void *server_thread(void *arg)
 
     // 获取eth0的 ip地址
     get_localip("eth0", serverip);
-    log_i("ip   [%s]",serverip);
-    log_i("port [%d]", LISTEN_PORT);
+    log_i("[%s] [%d]",serverip, LISTEN_PORT);
 
     while (1)
     {

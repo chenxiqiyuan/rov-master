@@ -104,16 +104,18 @@ void *depthSensor_thread(void *arg)
     else if(spl1301Setup(DEPTH_SENSOR_PIN_BASE) > 0)
     {
         depthSensor->name = "spl1301";
-        log_i("ms5837 init");
+        log_i("spl1301 init");
         while(1)
         {
             delay(10);
             //get_spl1301_depthSensor();
         }
     }
-
-    depthSensor->name = "no insert a depthSensor";
-    log_e("%s", depthSensor->name);
+    else
+    {
+        depthSensor->name = "no plugged a depthSensor";
+        log_e("%s", depthSensor->name);
+    }
     return NULL;
 }
 

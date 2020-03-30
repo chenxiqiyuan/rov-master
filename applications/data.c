@@ -17,43 +17,23 @@
 #include <pthread.h>
 
 
+Rocker_Type Rocker; // 摇杆数据结构体
 
+
+cmd_t cmd_data;
+cmd_t *cmd = &cmd_data;
 
 system_status_t  system_dev;
 system_status_t  *system = &system_dev;
 
-
-ReceiveData_Type ReceiveData = {
-    .THR = 1500,
-    .YAW = 1500,
-    .ROL = 1500,
-    .PIT = 1500};
-
-ControlCmd_Type ControlCmd = {
-    //上位机控制数据
-    .Power = 0,
-    .All_Lock = LOCK //初始化定义为锁定状态
-};
-
-Rocker_Type Rocker; // 摇杆数据结构体
-
-uint8_t RC_Control_Data[RECV_DATA_LEN] = {0};
-uint8_t Frame_EndFlag = 0; //接收数据包结束标志 
-uint8_t Control_RxCheck = 0; //尾校验字
-uint8_t recv_buff[RECV_DATA_LEN] = {0};
-
-uint8_t device_hint_flag = 0x0; //设备提示字符
-
-
 /**
-  * @brief  get_decimal(得到浮点型数据头两位小数的100倍)
-  * @param  浮点型数据 data
+  * @brief  获取浮点型数据 头两位小数的100倍
+  * @param  float data
   * @retval 头两位小数的100倍
-  * @notice 
   */
 uint8_t get_decimal(float data)
 {
-    return (uint8_t)((float)(data - (int)data) * 100);
+    return (uint8_t) ((data - (int)data) * 100);
 }
 
 /**
@@ -74,66 +54,58 @@ uint8_t calculate_check_sum(uint8_t *buff, uint8_t len)
 
 /**
   * @brief  上位机控制数据解析
-  * @param  控制字符数据 *recv_buff
-  * @retval None
+  * @param  控制数据包 *buff
   * @notice 从第四个字节开始为控制字符
   */
-void remote_control_data_analysis(uint8_t *recv_buff) //控制数据解析
+void remote_control_data_analysis(uint8_t *buff) //控制数据解析
 {
-    if (recv_buff[0] == 0xAA && recv_buff[1] == 0x55 && recv_buff[2] == 0x10) //检测包头
+    uint8_t rxCheck = 0; //尾校验字
+
+    if (buff[0] == 0xAA && buff[1] == 0x55) // 检测包头
     {
-        // 获取校验位
-        Control_RxCheck = calculate_check_sum(recv_buff, RECV_DATA_LEN - 1);
-
-        if (Control_RxCheck == recv_buff[RECV_DATA_LEN]) // 校验位核对
+        if(buff[2] == RECV_DATA_LEN) // 检测数据包长度(此判断暂无作用，用于后续 可变长度数据包)
         {
-            ControlCmd.Depth_Lock = RC_Control_Data[3];     //深度锁定
-            ControlCmd.Direction_Lock = RC_Control_Data[4]; //方向锁定
+            // 获取校验位
+            rxCheck = calculate_check_sum(buff, RECV_DATA_LEN - 1);
 
-            ControlCmd.Move = RC_Control_Data[5];        //前后
-            ControlCmd.Translation = RC_Control_Data[6]; //左右平移
-            ControlCmd.Vertical = RC_Control_Data[7];    //垂直
-            ControlCmd.Rotate = RC_Control_Data[8];      //旋转
 
-            ControlCmd.Power = RC_Control_Data[9];   //动力控制  推进器动力系数
-            ControlCmd.Light = RC_Control_Data[10];  //灯光控制
-            ControlCmd.Focus = RC_Control_Data[11];  //变焦摄像头控制
-            ControlCmd.Yuntai = RC_Control_Data[12]; //云台控制
-            ControlCmd.Arm = RC_Control_Data[13];    //机械臂控制
-            // ControlCmd.Raspi = RC_Control_Data[14];  //树莓派启动位
-            ControlCmd.All_Lock = RC_Control_Data[18];
+            if (rxCheck == buff[RECV_DATA_LEN]) // 校验位核对
+            {
+                cmd->depth_lock = buff[3];  // 深度锁定
+                cmd->sport_lock = buff[4];  // 方向锁定
+
+                cmd->move_back  = buff[5];  // 前后
+                cmd->left_right = buff[6];  // 左右平移
+                cmd->up_down    = buff[7];  // 垂直
+                cmd->rotate     = buff[8];  // 旋转
+
+                cmd->power      = buff[9];  // 动力控制  推进器动力系数
+                cmd->light      = buff[10]; // 灯光控制
+                cmd->camera     = buff[11]; // 变焦摄像头控制
+                cmd->yuntai     = buff[12]; // 云台控制
+                cmd->arm        = buff[13]; // 机械臂控制
+
+                cmd->all_lock = buff[18];   // 总开关
+            }
         }
     }
 }
 
 /* 
-【注意】这里仅清空控制数据指令，不能清除控制状态指令，因此，不能采用 meset 直接填充结构体为 0 
-*/
-void Control_Cmd_Clear(ControlCmd_Type *cmd)
-{
-    cmd->Move = 0;        //前后
-    cmd->Translation = 0; //左右平移
-    cmd->Vertical = 0;    //垂直
-    cmd->Rotate = 0;      //旋转
-
-    cmd->Light = 0;  //灯光控制
-    cmd->Focus = 0;  //变焦摄像头控制
-    cmd->Yuntai = 0; //云台控制
-    cmd->Arm = 0;    //机械臂控制
-}
+ * TODO 控制命令清零 【注意】这里仅清空控制数据指令，不能清除控制状态指令，因此，不能采用 meset 直接填充结构体为 0 
+ */
 
 
 /**
   * @brief  calculate_check_sum(计算校验和)
   * @param  数据包*buff、数据包长度len
   * @retval SUM
-  * @notice 
   */
 void convert_rov_status_data(uint8_t *buff) // 转换需要返回上位机数据
 {
-    short troll; //暂存数据
-    short tpitch;
-    short tyaw;
+    uint16_t troll; //暂存数据
+    uint16_t tpitch;
+    uint16_t tyaw;
     static unsigned char speed_test;
 
     troll = (short)((Sensor.JY901.Euler.Roll + 180) * 100); //数据转换:将角度数据转为正值并放大100倍
@@ -163,9 +135,9 @@ void convert_rov_status_data(uint8_t *buff) // 转换需要返回上位机数据
     buff[17] = (uint8_t)troll; //低8位
 
     buff[18] = (uint8_t)speed_test++;        //x轴航速
-    buff[19] = device_hint_flag; //设备提示字符
+    buff[19] = 0; //设备提示字符
 
-    buff[20] = 0x01; // ControlCmd.All_Lock;
+    buff[20] = 0x01; // cmd->All_Lock;
 
     buff[21] = (int)Sensor.PowerSource.Current;
     buff[22] = get_decimal(Sensor.PowerSource.Current); //小数的100倍;
@@ -194,13 +166,15 @@ void oled_show_status(void)
 	sprintf(str,"CPU: %0.1f%%", system->cpu.usage_rate);
 	OLED_ShowString(0,  48, (uint8_t *)str, 12);
 
-    if(system->net.netspeed < 1024)
+    if(system->net.netspeed < 1024) 
     {
+        // 此时单位为 kbps
         sprintf(str,"%0.1f kb/s", system->net.netspeed);
         OLED_ShowString(70,  48, (uint8_t *)str, 12);
     }
-    else // 转换单位为Mb
+    else 
     {
+        // 转换单位为 Mbps
         sprintf(str,"%0.1f Mb/s", system->net.netspeed / 1024);
         OLED_ShowString(70,  48, (uint8_t *)str, 12);
     }
@@ -278,3 +252,5 @@ int system_status_thread_init(void)
 
     return 0;
 }
+
+
