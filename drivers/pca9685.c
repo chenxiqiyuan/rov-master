@@ -1,5 +1,5 @@
 /*
- * @Description: pca9685 PWM 驱动程序
+ * @Description: PCA9685 PWM 驱动程序
  */
 
 #define LOG_TAG "pca9685"

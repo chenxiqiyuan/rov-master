@@ -19,6 +19,16 @@ typedef struct // 定义一个cpu occupy的结构体
     uint32_t softirq;// 软中断
 } cpuInfo_t;
 
+/* 网络数据 描述符 */
+typedef struct  
+{
+	uint64_t rp, rb;
+	uint64_t tp, tb;
+
+} netData_t;
+
+
+/* --------------------------------------------------------------------------------------------------- */
 
 /* 内存状况 描述符 */
 typedef struct 
@@ -40,13 +50,31 @@ typedef struct
 } disk_t;
 
 
-/* 网络数据 描述符 */
-typedef struct  
-{
-	uint64_t rp, rb;
-	uint64_t tp, tb;
-} netData_t;
 
+/* CPU 状态 */
+typedef struct
+{
+    float usage_rate;
+    float temperature;
+}cpu_t;
+
+/* 网卡 状态 */
+typedef struct
+{
+    char  *name;    // 网卡名
+    char  ip[20];   // 保存ip地址
+    float netspeed; // 网速
+}net_t;
+
+/* 系统状态 */
+typedef struct
+{
+    net_t    net;   // 网卡
+    cpu_t    cpu;   // cpu
+    disk_t   disk;  // 硬盘
+    memory_t memory;// 内存
+
+}system_status_t;
 
 
 float get_cpu_temp(void); // 获取 CPU 温度
@@ -55,7 +83,7 @@ float get_cpu_usage(void);// 获取 1s 内的 cpu 使用率
 void get_disk_status(disk_t *disk);	
 void get_memory_status(memory_t *memory); // 获取 内存情况
 
-char *get_net_speed(char *eth);
+float get_net_speed(char *eth);
 
 
 

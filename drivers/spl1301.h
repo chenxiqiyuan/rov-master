@@ -12,7 +12,7 @@
 #include "../user/DataType.h"
 
 #define SPL1301_I2C_DEV  "/dev/i2c-1"  // SPL1301 使用的 I2C设备
-#define SPL1301_I2C_ADDR 0x77          // 默认 SPL1301 I2C 地址
+#define SPL1301_I2C_ADDR 0x77          // SPL1301 I2C 地址 (datasheet P9)
 
 /* 寄存器地址 */
 #define REG_ID 0x0D
@@ -28,15 +28,15 @@
 
 typedef struct
 {
-    int16 c0;
-    int16 c1;
-    int32 c00;
-    int32 c10;
-    int16 c01;
-    int16 c11;
-    int16 c20;
-    int16 c21;
-    int16 c30;
+    int16_t c0;
+    int16_t c1;
+    int32_t c00;
+    int32_t c10;
+    int16_t c01;
+    int16_t c11;
+    int16_t c20;
+    int16_t c21;
+    int16_t c30;
 }spl1301_calib_param_t; // spl1301 出厂校准参数
 
 typedef struct
@@ -45,10 +45,10 @@ typedef struct
     uint8_t product_id;  // 产品ID     
     uint8_t revision_id; // 修订ID   
 
-    int32 i32rawPressure;    // 原始压力值
-    int32 i32rawTemperature; // 原始温度值
-    int32 i32kP; // 压力系数
-    int32 i32kT; // 温度系数
+    int32_t i32rawPressure;    // 原始压力值
+    int32_t i32rawTemperature; // 原始温度值
+    int32_t i32kP; // 压力系数
+    int32_t i32kT; // 温度系数
 
     float pressure;    // 实际压力值
     float temperature; // 实际温度值

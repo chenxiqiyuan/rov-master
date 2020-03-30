@@ -1,5 +1,5 @@
 /*
- * @Description: 获取 CPU、内存、硬盘 状况
+ * @Description: 系统状态获取方法(CPU、内存、硬盘、网卡网速)
  */
 
 #define LOG_TAG "cpu_status"
@@ -70,7 +70,7 @@ void get_memory_status(memory_t *memory)
 void get_disk_status(disk_t *disk)
 {
 	FILE *fp;
-	float b, c; 
+	uint32_t b, c; 
     // 用于保存各个文件系统的 总容量大小、已使用大小    
     float disk_total = 0, disk_used = 0; 
 	char  a[20], d[20], e[20], f[20], buf[100];
@@ -82,7 +82,7 @@ void get_disk_status(disk_t *disk)
         Filesystem     1K-blocks   Used Available Use% Mounted on
         udev               85324      0     85324   0% /dev
     */
-	while (fscanf(fp, "%s %f %f %s %s %s", a, &b, &c, d, e, f) > 0) {
+	while (fscanf(fp, "%s %u %u %s %s %s", a, &b, &c, d, e, f) > 0) {
         disk_total += b;
 		disk_used  += c;
 	}
@@ -176,37 +176,34 @@ void get_net_data(netData_t *net_data, char *eth)
 	uint64_t rb, rp, re, rd, rfi, rfr, rc, rm,
 	    tb, tp, te, td, tfi, tfr, tc, tm;
 
-	bzero(net_data, sizeof(netData_t));
-
 	fp = fopen("/proc/net/dev", "r");
 	while (fscanf(fp,
 		"%s %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
 		name, &rb, &rp, &re, &rd, &rfi, &rfr, &rc, &rm, &tb, &tp,
-		&te, &td, &tfi, &tfr, &tc, &tm) > 0) {
+		&te, &td, &tfi, &tfr, &tc, &tm) > 0) 
+    {
+        if (strcmp(name, eth) == 0) {
 
-		if (strcmp(name, eth) == 0) {
-
-			net_data->rb = rb;
-			net_data->rp = rp;
-			net_data->tb = tb;
-			net_data->tp = tp;
-			break;
-		}
-
+            net_data->rb = rb;
+            net_data->rp = rp;
+            net_data->tb = tb;
+            net_data->tp = tp;
+            break;
+        }
 	}
 }
 
  /**
  * @brief  获取对应网卡的网络数据
  * @param  网卡名
- * @notice 注意：这里进行了单位转换，转换为 kb/Mb(而不是 kB/MB)
+ * @notice 注意：这里进行了单位转换，转换为 kb(而不是 kB)
  */
-char *get_net_speed(char *eth)
+float get_net_speed(char *eth)
 {
-    float ns;
+    float netspeed;
 	char ethc[20];
     netData_t nd1, nd2;
-	static char netspeed[15];
+
 
     sprintf(ethc, "%s:", eth); // 加上:
 
@@ -214,14 +211,7 @@ char *get_net_speed(char *eth)
 	sleep(1);
 	get_net_data(&nd2, ethc);
 
-	ns = (float)(((nd2).rb + nd2.tb) - (nd1.rb + nd1.tb)) / 1024 * 8; // 转换为 kbps/Mbps
-
-    if(ns < 1024)
-        sprintf(netspeed, "%.2f kb/s", ns);
-    else
-        sprintf(netspeed, "%.2f Mb/s", ns / 1024); 
+	netspeed = (float)((nd2.rb + nd2.tb) - (nd1.rb + nd1.tb)) / 1024 * 8; // 转换为 kbps
 
 	return netspeed;
 }
-
-

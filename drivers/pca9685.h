@@ -46,14 +46,14 @@
 
 
 typedef struct {
-    uint8 allcall :1; 
-    uint8 sub3    :1; 
-    uint8 sub2    :1;
-    uint8 sub1    :1;
-    uint8 sleep   :1;
-    uint8 ai      :1; 
-    uint8 extclk  :1;
-    uint8 restart :1;
+    uint8_t allcall :1; 
+    uint8_t sub3    :1; 
+    uint8_t sub2    :1;
+    uint8_t sub1    :1;
+    uint8_t sleep   :1;
+    uint8_t ai      :1; 
+    uint8_t extclk  :1;
+    uint8_t restart :1;
 } pca9685_t; // pca9685 MODE1 寄存器配置结构体
 
 

@@ -58,15 +58,15 @@
 #define RESERVED_BIT    0b1
 
 typedef struct {
-    uint8 reserved   :1; 
-    uint8 nop        :2; 
-    uint8 pull_up_en :1;
-    uint8 ts_mode    :1;
-    uint8 dr         :3;
-    uint8 mode       :1;
-    uint8 pga        :3;
-    uint8 mux        :3;
-    uint8 ss         :1;
+    uint8_t reserved   :1; 
+    uint8_t nop        :2; 
+    uint8_t pull_up_en :1;
+    uint8_t ts_mode    :1;
+    uint8_t dr         :3;
+    uint8_t mode       :1;
+    uint8_t pga        :3;
+    uint8_t mux        :3;
+    uint8_t ss         :1;
 } ads1118_reg_t; // ads1118 寄存器配置结构体
 
 typedef union {

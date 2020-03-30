@@ -1,12 +1,13 @@
 #ifndef __MS5837_H_
 #define __MS5837_H_
 
+#include "../user/DataType.h"
 
 #define MS5837_I2C_DEV  "/dev/i2c-1"  // SPL1301 使用的 I2C设备
 /* MS5837-30BA address is 1110110x (write: x=0, read: x=1). */
-#define MS583703BA_I2C_ADDR         0xEC  // MS5387 I2C 地址 (datasheet P9)
-#define MS583703BA_RESET            0x1E 
+#define MS583703BA_I2C_ADDR         0x76  // MS5387 I2C 地址 (datasheet P9)
 
+#define MS583703BA_RESET            0x1E
 #define MS583703BA_ADC_RD           0x00
 #define	MS583703BA_PROM_RD          0xA0
 #define MS583703BA_PROM_CRC         0xAE
@@ -65,7 +66,7 @@ typedef struct
 }ms5837_t; /* 存放ms5837相关参数 */
 
 
-
+int ms5837Setup(const int pinBase);
 
 
 #endif

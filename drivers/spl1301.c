@@ -1,5 +1,5 @@
 /*
- * @Description: spl1301 深度传感器驱动程序
+ * @Description: SPL1301 深度传感器驱动程序
  */
 
 #define LOG_TAG "spl1301"
@@ -129,16 +129,16 @@ void spl1301_rateset(int fd, uint8_t iSensor, uint8_t u8SmplRate, uint8_t u8Over
  */
 void spl1301_get_calib_param(int fd)
 {
-    uint32 h;
-    uint32 m;
-    uint32 l;
+    uint32_t h;
+    uint32_t m;
+    uint32_t l;
     h = wiringPiI2CReadReg8(fd, 0x10);
     l = wiringPiI2CReadReg8(fd, 0x11);
-    spl1301->calib_param.c0 = (int16)h << 4 | l >> 4;
+    spl1301->calib_param.c0 = (int16_t)h << 4 | l >> 4;
     spl1301->calib_param.c0 = (spl1301->calib_param.c0 & 0x0800) ? (0xF000 | spl1301->calib_param.c0) : spl1301->calib_param.c0;
     h = wiringPiI2CReadReg8(fd, 0x11);
     l = wiringPiI2CReadReg8(fd, 0x12);
-    spl1301->calib_param.c1 = (int16)(h & 0x0F) << 8 | l;
+    spl1301->calib_param.c1 = (int16_t)(h & 0x0F) << 8 | l;
     spl1301->calib_param.c1 = (spl1301->calib_param.c1 & 0x0800) ? (0xF000 | spl1301->calib_param.c1) : spl1301->calib_param.c1;
     h = wiringPiI2CReadReg8(fd, 0x13);
     m = wiringPiI2CReadReg8(fd, 0x14);
@@ -152,19 +152,19 @@ void spl1301_get_calib_param(int fd)
     spl1301->calib_param.c10 = (spl1301->calib_param.c10 & 0x080000) ? (0xFFF00000 | spl1301->calib_param.c10) : spl1301->calib_param.c10;
     h = wiringPiI2CReadReg8(fd, 0x18);
     l = wiringPiI2CReadReg8(fd, 0x19);
-    spl1301->calib_param.c01 = (int16)h << 8 | l;
+    spl1301->calib_param.c01 = (int16_t)h << 8 | l;
     h = wiringPiI2CReadReg8(fd, 0x1A);
     l = wiringPiI2CReadReg8(fd, 0x1B);
-    spl1301->calib_param.c11 = (int16)h << 8 | l;
+    spl1301->calib_param.c11 = (int16_t)h << 8 | l;
     h = wiringPiI2CReadReg8(fd, 0x1C);
     l = wiringPiI2CReadReg8(fd, 0x1D);
-    spl1301->calib_param.c20 = (int16)h << 8 | l;
+    spl1301->calib_param.c20 = (int16_t)h << 8 | l;
     h = wiringPiI2CReadReg8(fd, 0x1E);
     l = wiringPiI2CReadReg8(fd, 0x1F);
-    spl1301->calib_param.c21 = (int16)h << 8 | l;
+    spl1301->calib_param.c21 = (int16_t)h << 8 | l;
     h = wiringPiI2CReadReg8(fd, 0x20);
     l = wiringPiI2CReadReg8(fd, 0x21);
-    spl1301->calib_param.c30 = (int16)h << 8 | l;
+    spl1301->calib_param.c30 = (int16_t)h << 8 | l;
 }
 
 

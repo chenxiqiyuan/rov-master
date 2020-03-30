@@ -1,13 +1,6 @@
-/*
- * @Description: 九轴模块
- * @Author: chenxi
- * @Date: 2020-02-10 12:15:34
- * @LastEditTime : 2020-02-10 16:36:45
- * @LastEditors  : chenxi
- */
 
-#ifndef __DRV_JY901_H_
-#define __DRV_JY901_H_
+#ifndef __JY901_H_
+#define __JY901_H_
 
 #include "../user/DataType.h"
 
@@ -19,6 +12,7 @@
 /* JY901 命令,暂不使用*/
 #define JY901_CMDS 0
 #if JY901_CMDS 
+
 #define SAVE 0x00
 #define CALSW 0x01
 #define RSW 0x02

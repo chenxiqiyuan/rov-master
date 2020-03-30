@@ -1,5 +1,5 @@
 /*
- * @Description: oled 驱动程序
+ * @Description: OLED 驱动显示方法
  */
 
 #define LOG_TAG "oled"
@@ -25,13 +25,13 @@ static int fd; //驱动文件描述符
 //[5]0 1 2 3 ... 127
 //[6]0 1 2 3 ... 127
 //[7]0 1 2 3 ... 127
-uint8 OLED_GRAM[128][8];
+uint8_t OLED_GRAM[128][8];
 
 //向SSD1306写入一个字节。
 //dat:要写入的数据/命令
 //cmd:数据/命令标志 0,表示命令;1,表示数据;
 
-void OLED_WR_Byte(uint8 dat, uint8 cmd)
+void OLED_WR_Byte(uint8_t dat, uint8_t cmd)
 {
 	if (cmd)
 	{
@@ -46,7 +46,7 @@ void OLED_WR_Byte(uint8 dat, uint8 cmd)
 //更新显存到LCD
 void OLED_Refresh_Gram(void)
 {
-	uint8 i, n;
+	uint8_t i, n;
 	for (i = 0; i < 8; i++)
 	{
 		OLED_WR_Byte(0xb0 + i, OLED_CMD); //设置页地址（0~7）
@@ -74,7 +74,7 @@ void OLED_Display_Off(void)
 //清屏函数,清完屏,整个屏幕是黑色的!和没点亮一样!!!
 void OLED_Clear(void)
 {
-	uint8 i, n;
+	uint8_t i, n;
 	for (i = 0; i < 8; i++)
 		for (n = 0; n < 128; n++)
 			OLED_GRAM[n][i] = 0X00;
@@ -85,9 +85,9 @@ void OLED_Clear(void)
 //x:0~127
 //y:0~63
 //t:1 填充 0,清空
-void OLED_DrawPoint(uint8 x, uint8 y, uint8 t)
+void OLED_DrawPoint(uint8_t x, uint8_t y, uint8_t t)
 {
-	uint8 pos, bx, temp = 0;
+	uint8_t pos, bx, temp = 0;
 	if (x > 127 || y > 63)
 		return; //超出范围了.
 	pos = 7 - y / 8;
@@ -101,9 +101,9 @@ void OLED_DrawPoint(uint8 x, uint8 y, uint8 t)
 //x1,y1,x2,y2 填充区域的对角坐标
 //确保x1<=x2;y1<=y2 0<=x1<=127 0<=y1<=63
 //dot:0,清空;1,填充
-void OLED_Fill(uint8 x1, uint8 y1, uint8 x2, uint8 y2, uint8 dot)
+void OLED_Fill(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t dot)
 {
-	uint8 x, y;
+	uint8_t x, y;
 	for (x = x1; x <= x2; x++)
 	{
 		for (y = y1; y <= y2; y++)
@@ -117,11 +117,11 @@ void OLED_Fill(uint8 x1, uint8 y1, uint8 x2, uint8 y2, uint8 dot)
 //y:0~63
 //mode:0,反白显示;1,正常显示
 //size:选择字体 12/16/24
-void OLED_ShowChar(uint8 x, uint8 y, uint8 chr, uint8 size, uint8 mode)
+void OLED_ShowChar(uint8_t x, uint8_t y, uint8_t chr, uint8_t size, uint8_t mode)
 {
-	uint8 temp, t, t1;
-	uint8 y0 = y;
-	uint8 csize = (size / 8 + ((size % 8) ? 1 : 0)) * (size / 2); //得到字体一个字符对应点阵集所占的字节数
+	uint8_t temp, t, t1;
+	uint8_t y0 = y;
+	uint8_t csize = (size / 8 + ((size % 8) ? 1 : 0)) * (size / 2); //得到字体一个字符对应点阵集所占的字节数
 	chr = chr - ' ';											  //得到偏移后的值
 	for (t = 0; t < csize; t++)
 	{
@@ -156,18 +156,18 @@ void OLED_ShowChar(uint8 x, uint8 y, uint8 chr, uint8 size, uint8 mode)
 //p_w:图片宽（单位像素）
 //p_h:图片高（单位像素）
 //*p:图片起始地址
-void OLED_ShowPicture(uint8 x, uint8 y, const uint8 *p, uint8 p_w, uint8 p_h)
+void OLED_ShowPicture(uint8_t x, uint8_t y, const uint8_t *p, uint8_t p_w, uint8_t p_h)
 {
-	uint8 temp, i, col, row;
-	uint8 y0 = y;
-	uint8 width = p_w;
+	uint8_t temp, i, col, row;
+	uint8_t y0 = y;
+	uint8_t width = p_w;
 	if (x + p_w > 128)
 		width = 128 - p_w; //实际显示宽度
-	uint8 high = p_h;
+	uint8_t high = p_h;
 	if (y + p_h > 64)
 		high = 64 - p_h;									 //实际显示高度
-	uint8 exp_col_bytes = (p_h / 8 + ((p_h % 8) ? 1 : 0));   //显示一列的字节数
-	uint8 act_col_bytes = (high / 8 + ((high % 8) ? 1 : 0)); //实际显示一列的字节数
+	uint8_t exp_col_bytes = (p_h / 8 + ((p_h % 8) ? 1 : 0));   //显示一列的字节数
+	uint8_t act_col_bytes = (high / 8 + ((high % 8) ? 1 : 0)); //实际显示一列的字节数
 
 	for (row = 0; row < width; row++) //列++
 	{
@@ -200,13 +200,13 @@ void OLED_ShowPicture(uint8 x, uint8 y, const uint8 *p, uint8 p_w, uint8 p_h)
 //size:字体大小
 //mode:模式	0,填充模式;1,叠加模式
 //num:数值(0~4294967295);
-void OLED_ShowNum(uint8 x, uint8 y, uint32 num, uint8 len, uint8 size)
+void OLED_ShowNum(uint8_t x, uint8_t y, uint32_t num, uint8_t len, uint8_t size)
 {
-	uint8 t, temp;
-	uint8 enshow = 0;
+	uint8_t t, temp;
+	uint8_t enshow = 0;
 	for (t = 0; t < len; t++)
 	{
-		temp = (uint32)(num / pow(10, len - t - 1)) % 10;
+		temp = (uint32_t)(num / pow(10, len - t - 1)) % 10;
 		if (enshow == 0 && t < (len - 1))
 		{
 			if (temp == 0)
@@ -226,7 +226,7 @@ void OLED_ShowNum(uint8 x, uint8 y, uint32 num, uint8 len, uint8 size)
 //x,y:起点坐标
 //size:字体大小
 //*p:字符串起始地址
-void OLED_ShowString(uint8 x, uint8 y, const uint8 *p, uint8 size)
+void OLED_ShowString(uint8_t x, uint8_t y, const uint8_t *p, uint8_t size)
 {
 	while ((*p <= '~') && (*p >= ' ')) //判断是不是非法字符!
 	{
@@ -260,7 +260,7 @@ int oledSetup(void)
 
 	if (fd < 0)
 	{
-		log_e("OLED init failed");
+		log_e("OLED i2c init failed");
 		return -1;
 	}
 

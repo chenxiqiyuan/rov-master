@@ -1,6 +1,8 @@
 
 /*
  * @Description: ads1118 ADC 驱动程序
+ *
+ * Copyright (c) 2019-2020, Ian, <zengwangfa@outlook.com>
  */
 
 #define LOG_TAG "ads1118"

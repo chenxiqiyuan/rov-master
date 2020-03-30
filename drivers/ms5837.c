@@ -1,6 +1,5 @@
-
 /*
- * @Description: ms5837 深度传感器驱动
+ * @Description: MS5837 深度传感器驱动
  *
  *       Notes: 水深传感器设备驱动
  *   Attention: SCL - E10 (黑色)   
@@ -65,6 +64,8 @@ void ms5837_reset(int fd)
   * @brief  ms5837获取出厂标定参数
   * @param  None
   * @retval 返回出厂标定参数 crc校验 是否成功标志：1成功，-1失败
+  *  若成功表示为ms5837传感器
+  *  若失败表示为其他类型传感器或无
   */
 int ms5837_get_calib_param(int fd)
 {	
@@ -142,8 +143,8 @@ void ms5837_cal_raw_temperature(int fd)
  */
 void ms5837_cal_pressure(int fd)
 {
-	uint64_t OFFi, SENSi;
-	uint32_t Ti, dT_squ;
+	int64_t  Ti, OFFi, SENSi;
+	uint32_t dT_squ;
 	uint32_t temp_minus_squ, temp_plus_squ;
 
 	// 获取原始压力数字量
@@ -156,7 +157,7 @@ void ms5837_cal_pressure(int fd)
 	dT_squ   = (ms5837->dT * ms5837->dT); // dT的2次方
 	temp_minus_squ = (2000 - ms5837->TEMP) * (2000 - ms5837->TEMP); // 温度差的2次方
 
-	/* 二级温度补偿 (datasheet P8) */
+	/* 对温度和压力进行二阶修正 (datasheet P8) */
 	if(ms5837->TEMP < 2000) // 低温情况:低于20℃时
 	{
 		Ti    = 3 * dT_squ / 0x200000000;
@@ -166,8 +167,8 @@ void ms5837_cal_pressure(int fd)
 		if(ms5837->TEMP < -1500) // 超低温情况:低于-15℃时
 		{
 			temp_plus_squ = (ms5837->TEMP + 1500) * (ms5837->TEMP + 1500); // 温度和的2次方
-			OFFi  = OFFi  + 7 * temp_plus_squ;
-			SENSi = SENSi + 4 * temp_plus_squ / 8;
+			OFFi  += 7 * temp_plus_squ;
+			SENSi += 4 * temp_plus_squ;
 		}
 	}
 	else // 高温情况:高于20℃时
@@ -178,6 +179,7 @@ void ms5837_cal_pressure(int fd)
 	}
 	ms5837->OFF  -= OFFi;
 	ms5837->SENS -= SENSi;	
+
 	// 温度补偿后的压力值
 	ms5837->P = (ms5837->SENS / 0x200000 - ms5837->OFF) / 0x1000;
 
@@ -225,7 +227,6 @@ static int myDigitalRead(struct wiringPiNodeStruct *node, int pin)
 }
 
 
-
 /**
  * @brief  初始化并设置 ms5837
  * @param 
@@ -242,8 +243,7 @@ int ms5837Setup(const int pinBase)
         return -1;
     }
 
-	// 延时待测试 rt_thread_mdelay(100);  
-	/* 先复位再读取prom数据 (datasheet P10)*/
+	/* 先复位再读取prom数据 (datasheet P10) */
 	ms5837_reset(fd);	     
 	
 	// 获取标定参数
@@ -251,7 +251,7 @@ int ms5837Setup(const int pinBase)
 	{
 		return -1;
 	}
-
+	
     // 创建节点，2个通道，一个为压力值，一个为温度值
     node = wiringPiNewNode(pinBase, 2);
 	if (!node)

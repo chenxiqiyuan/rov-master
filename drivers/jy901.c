@@ -1,7 +1,7 @@
-/*
- * @Description: jy901 九轴数据读取程序
+ /*
+ * @Description: JY901 九轴数据解析程序
  */
- 
+
 #define LOG_TAG "jy901"
 
 #include "jy901.h"
