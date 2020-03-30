@@ -21,6 +21,8 @@ echo "=======================安装easylogger======================"
 cd ../easylogger
 make
 sudo cp libeasylogger.so ..
+sudo cp libeasylogger.so /usr/lib/
+
 cd ..
 
 exit 0

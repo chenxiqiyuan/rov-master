@@ -32,7 +32,7 @@
 /* enable log output. default open this macro */
 #define ELOG_OUTPUT_ENABLE
 /* enable log write file. default open this macro */
-#define ELOG_FILE_ENABLE
+//#define ELOG_FILE_ENABLE
 /* enable flush file cache. default open this macro */
 #define ELOG_FILE_FLUSH_CAHCE_ENABLE
 /* setting static output log level */

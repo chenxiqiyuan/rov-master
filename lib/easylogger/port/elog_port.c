@@ -65,7 +65,7 @@ void elog_port_output(const char *log, size_t size) {
     printf("%.*s", (int)size, log);
 #ifdef ELOG_FILE_ENABLE
     /* write the file */
-    elog_file_write(log, size);
+    //elog_file_write(log, size);
 #endif 
 }
 
